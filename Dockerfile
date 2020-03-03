@@ -1,14 +1,15 @@
 FROM maven:3.5.4-jdk-8-alpine AS builder
 COPY pom.xml .
+RUN mvn dependency:go-offline package
 COPY src src/
-RUN mvn install -DskipTests
+RUN mvn install -DskipTests --offline
 
 FROM open-liberty as server-setup
-COPY --from=builder /target/LibertyProject.zip /config/
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip \
-    && unzip /config/LibertyProject.zip \
+    && apt-get install -y --no-install-recommends unzip
+COPY --from=builder /target/LibertyProject.zip /config/
+RUN unzip /config/LibertyProject.zip \
     && mv /wlp/usr/servers/sampleAppServer/* /config/ \
     && rm -rf /config/wlp \
     && rm -rf /config/LibertyProject.zip 
