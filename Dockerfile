@@ -2,10 +2,10 @@ FROM maven:3.5.4-jdk-8-alpine AS builder
 COPY pom.xml settings.xml* ./
 RUN mkdir /root/.m2/ \
     && mv settings.xml* /root/.m2/ 2>/dev/null || true \
-    && mvn dependency:go-offline package
-COPY src src/
-RUN mvn install -DskipTests --offline \
+    && mvn dependency:go-offline package \
     && rm -rf /root/.m2/settings.xml*
+COPY src src/
+RUN mvn install -DskipTests --offline
 
 FROM open-liberty as server-setup
 USER root
