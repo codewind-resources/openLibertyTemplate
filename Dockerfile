@@ -1,6 +1,9 @@
 FROM maven:3.5.4-jdk-8-alpine AS builder
-COPY pom.xml .
-RUN mvn dependency:go-offline package
+COPY pom.xml settings.xml ./
+RUN mkdir /root/.m2/ \
+    && mv settings.xml /root/.m2/ \
+    && mvn dependency:go-offline package \
+    && rm /root/.m2/settings.xml
 COPY src src/
 RUN mvn install -DskipTests --offline
 
