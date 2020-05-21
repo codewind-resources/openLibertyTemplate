@@ -15,11 +15,13 @@ COPY --from=builder /target/LibertyProject.zip /config/
 RUN unzip /config/LibertyProject.zip \
     && mv /wlp/usr/servers/sampleAppServer/* /config/ \
     && rm -rf /config/wlp \
-    && rm -rf /config/LibertyProject.zip 
+    && rm -rf /config/LibertyProject.zip
 
 FROM open-liberty
 LABEL maintainer="Graham Charters" vendor="IBM" github="https://github.com/WASdev/ci.maven"
 COPY --chown=1001:0 --from=server-setup /config/ /config/
 # user.dir environment variable is /opt/ol/wlp/output/defaultServer/resources/
 COPY resources /opt/ol/wlp/output/defaultServer/resources/
+# Copy the config directory again to pick up user defined configDropins
+COPY src/main/liberty/config/ /config/
 EXPOSE 9080 9443
