@@ -1,25 +1,17 @@
-FROM maven:3.5.4-jdk-8-alpine AS builder
+# Package the application as a war file
+FROM maven:3.6.3-ibmjava-8-alpine AS builder
 COPY pom.xml settings.xml ./
-RUN mkdir /root/.m2/ \
-    && mv settings.xml /root/.m2/ \
-    && mvn dependency:go-offline package \
-    && rm /root/.m2/settings.xml
 COPY src src/
-RUN mvn install -DskipTests --offline
+COPY resources resources/
+RUN mvn clean package
 
-FROM open-liberty as server-setup
-USER root
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip
-COPY --from=builder /target/LibertyProject.zip /config/
-RUN unzip /config/LibertyProject.zip \
-    && mv /wlp/usr/servers/sampleAppServer/* /config/ \
-    && rm -rf /config/wlp \
-    && rm -rf /config/LibertyProject.zip 
 
-FROM open-liberty
-LABEL maintainer="Graham Charters" vendor="IBM" github="https://github.com/WASdev/ci.maven"
-COPY --chown=1001:0 --from=server-setup /config/ /config/
-# user.dir environment variable is /opt/ol/wlp/output/defaultServer/resources/
-COPY resources /opt/ol/wlp/output/defaultServer/resources/
-EXPOSE 9080 9443
+# Copy the war file over to the open liberty image
+FROM openliberty/open-liberty:kernel-java8-openj9-ubi
+ARG VERSION=1.0
+ARG REVISION=SNAPSHOT
+
+COPY --from=builder --chown=1001:0 src/main/liberty/config /config/
+COPY --from=builder --chown=1001:0 target/io.openliberty.sample.getting.started.war /config/apps
+COPY --from=builder --chown=1001:0 resources /opt/ol/wlp/output/defaultServerresources
+RUN configure.sh 
